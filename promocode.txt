@@ -1,0 +1,308 @@
+---------------------------------------------------------------------Bean-----------------------------------------------------------------------------------------------------------
+
+package com.cg.bean;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@Table(name="promocode")
+public class Promocode {
+	@Id
+	@GeneratedValue(strategy=GenerationType.SEQUENCE)
+	private Integer promocodeId;
+	
+	@Column(length=20)
+	private String promocode;
+	
+	public Promocode() {
+		// TODO Auto-generated constructor stub
+	}
+
+	public Promocode(String promocode) {
+		super();
+		this.promocode = promocode;
+	}
+
+	public Integer getPromocodeId() {
+		return promocodeId;
+	}
+
+	public void setPromocodeId(Integer promocodeId) {
+		this.promocodeId = promocodeId;
+	}
+
+	public String getPromocode() {
+		return promocode;
+	}
+
+	public void setPromocode(String promocode) {
+		this.promocode = promocode;
+	}
+	
+	
+}
+
+--------------------------------------------------------------------------------------controller---------------------------------------------------------------------------------------
+package com.cg.controller;
+
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import com.cg.bean.Discount;
+import com.cg.bean.Merchant;
+import com.cg.bean.Product;
+
+import com.cg.bean.Promocode;
+import com.cg.bean.User1;
+
+import com.cg.service.AdminServices;
+
+@CrossOrigin()
+@RestController
+@RequestMapping("/admin")
+public class AdminActionController {
+	
+	
+
+	@Autowired
+	private AdminServices adminService;
+	@GetMapping("/AllPromocodes") // Get mapping for getting list of sessions
+	public List<Promocode>  getAllPromos() {
+		return adminService. getAllPromos();
+	}
+	
+	@PostMapping(value = "/addPromocode", consumes = { "application/json" }) // to add session into the database
+	public String save(@RequestBody Promocode p) {
+		adminService.addPromo(p);
+		return "Promo added!";
+	}
+	
+	@DeleteMapping(value = "/deletePromoCode/{id}") // to delete session from database using id
+	public String deleteUser(@PathVariable int id) {
+		adminService.deletePromo(id);
+		return "Promo deleted";
+	}
+
+
+-----------------------------------------------------------------------------------DAO-------------------------------------------------------------------------------------------------
+
+package com.cg.dao;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.cg.bean.Promocode;
+
+
+
+
+@Repository
+public interface IPromoDao extends JpaRepository<Promocode, Integer>{
+	
+
+}
+
+
+-----------------------------------------------------------------------------------Exception-------------------------------------------------------------------------------------------
+package com.cg.exception;
+
+
+public class ApplicationException extends RuntimeException{
+	public ApplicationException(String message) {
+		super(message);
+	}
+}
+
+
+
+-------exception handler--------------------------------
+
+package com.cg.exception;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+
+@ControllerAdvice
+public class ApplicationExceptionHandler {
+	@ExceptionHandler({ApplicationException.class})
+	public ResponseEntity<String> handler(ApplicationException ex){
+		return new ResponseEntity<String>(ex.getMessage(), HttpStatus.NOT_FOUND);
+	}
+}
+
+
+----------------------------------------------------------------------------service----------------------------------------------------------------------------------------------------
+package com.cg.service;
+
+
+
+import java.util.List;
+
+import com.cg.bean.Discount;
+import com.cg.bean.Merchant;
+import com.cg.bean.Product;
+
+import com.cg.bean.Promocode;
+import com.cg.bean.User1;
+
+
+
+
+
+
+
+public interface AdminServices {
+public void addPromo(Promocode promo);
+	public void deletePromo(int id);
+	public List<Promocode> getAllPromos();
+	}
+	
+	
+------------service impl--------------------
+package com.cg.service;
+
+
+
+import java.util.List;
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+
+import com.cg.dao.DiscountDAO;
+import com.cg.dao.IPromoDao;
+import com.cg.dao.MerchantDAO;
+import com.cg.dao.ProductDAO;
+import com.cg.dao.User1DAO;
+import com.cg.exception.ApplicationException;
+import com.cg.bean.Discount;
+import com.cg.bean.Merchant;
+import com.cg.bean.Product;
+
+import com.cg.bean.Promocode;
+import com.cg.bean.User1;
+
+
+
+
+
+@Service
+@Transactional
+public class AdminServicesImpl implements AdminServices {
+@Autowired
+		IPromoDao promoDao;
+		
+		@Override
+		public void addPromo(Promocode promo) {
+			// TODO Auto-generated method stub
+			promoDao.save(promo);	
+			
+		}
+
+		@Override
+		public List<Promocode> getAllPromos() {
+			// TODO Auto-generated method stub
+			return promoDao.findAll();
+		}
+
+
+		@Transactional(propagation = Propagation.REQUIRED)
+		public void deletePromo(int id) {
+			// TODO Auto-generated method stub
+			if (promoDao.existsById(id)) {
+		         promoDao.deleteById(id);
+			} else {
+				System.out.println("Id not found");
+			}
+		}
+		}
+		
+-----------------------------------------------------------------------------Application.java-------------------------------------------------------------------------------------------
+package com.cg;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+@SpringBootApplication
+public class Application {
+	public static void main(String[] args) {
+		SpringApplication.run(Application.class, args);
+		System.out.println("Application running on port 3000");
+
+	}
+
+}
+-----------------------------------------------------------------------------Application.property--------------------------------------------------------------------------------------
+
+server.port=3000
+spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+spring.datasource.url=jdbc:oracle:thin:@ndaoracle:1521:ORCL11G
+spring.datasource.username=lab01trg1
+spring.datasource.password=lab01oracle
+spring.jpa.show-sql=true
+spring.jpa.database-platform=org.hibernate.dialect.Oracle10gDialect
+spring.jpa.hibernate.ddl-auto=update
+
+--------------------------------------------------------------------------pom.xml------------------------------------------------------------------------------------------------------
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-parent</artifactId>
+		<version>2.1.4.RELEASE</version>
+		<relativePath /> <!-- lookup parent from repository -->
+	</parent>
+  <groupId>com.cg</groupId>
+  <artifactId>ProductCartManagement</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>ProductCartManagement</name>
+  <properties>
+		<java.version>1.8</java.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+			<!-- DO NOT USE VERSION PROPERTY, VERSION IS DERIVED FROM PARENT DEPENDENCY -->
+		</dependency>
+		<dependency>
+			<groupId>com.oracle</groupId>
+			<artifactId>ojdbc6</artifactId>
+			<version>11.2.0.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+		</dependency>
+	</dependencies>
+</project>
+
+----------------
